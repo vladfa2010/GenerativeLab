@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cifra · Курс по генеративному искусству</title>
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="index.html">CIFRA</a>
+      <nav class="nav">
+        <a href="index.html">Главная</a>
+        <a href="course.html" class="active">Курс</a>
+        <a href="lab.html">Лаборатория</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div id="courseListView">
+      <div class="page-head">
+        <h1>Курс: основы генеративного искусства</h1>
+        <p>Пятнадцать уроков от идеи до практики. Внизу каждого урока — живой генеративный модуль: прочитали теорию и сразу пробуете сами, не уходя со страницы.</p>
+      </div>
+      <div class="course-grid" id="courseGrid"></div>
+    </div>
+    <div id="lessonView" style="display: none;"></div>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <span>© 2026 Cifra. Generative Lab.</span>
+      <span class="mono" style="color:#6b6b70;">p5.js · Web Audio · DeviceMotion</span>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="assets/p5.min.js"></script>
+  <script src="assets/engine.js"></script>
+  <script src="assets/course-data.js"></script>
+  <script src="assets/course.js"></script>
+</body>
+</html>

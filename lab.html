@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cifra · Generative Lab</title>
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="index.html">CIFRA</a>
+      <nav class="nav">
+        <a href="index.html">Главная</a>
+        <a href="course.html">Курс</a>
+        <a href="lab.html" class="active">Лаборатория</a>
+        <a href="#gallery" class="nav-anchor">Коллекция</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero" id="generator">
+      <div style="margin-bottom: 24px;">
+        <h1>Generative Lab</h1>
+        <p style="color: #939393; margin-top: 6px;">Двадцать два алгоритма. Покричите, наклоните телефон, пройдите по спектру от правила к хаосу.</p>
+      </div>
+
+      <div class="algo-tabs" id="algoTabs"></div>
+
+      <div class="spectrum-bar">
+        <span class="label left">Pure rule</span>
+        <input type="range" id="spectrum" min="0" max="1" step="0.01" value="0" />
+        <span class="label right">Pure chaos</span>
+        <span class="spectrum-value" id="spectrumValue">0%</span>
+      </div>
+
+      <div class="generator">
+        <div class="canvas-wrap">
+          <div id="canvas-holder"></div>
+          <div class="canvas-overlay">
+            <span class="chip"><span class="dot"></span><span id="chipAlgo">Flow Field</span></span>
+            <span class="chip mono" id="chipSeed">—</span>
+          </div>
+          <div class="rec-indicator" id="recIndicator">
+            <span class="pulse"></span>
+            <span>REC</span>
+          </div>
+          <div class="code-drawer" id="codeDrawer">
+            <div class="code-drawer-header" id="codeDrawerHeader">
+              <span class="title"><span class="icon">▶</span> <span>Код алгоритма</span></span>
+              <button class="btn-mini" id="codeCopy">copy</button>
+            </div>
+            <pre id="codeContent"></pre>
+          </div>
+        </div>
+
+        <aside class="controls">
+          <div>
+            <h2 id="algoTitle">Параметры</h2>
+            <p class="muted" id="algoShort">—</p>
+          </div>
+
+          <div id="params"></div>
+
+          <div class="divider"></div>
+
+          <div class="sensors">
+            <h3>Датчики</h3>
+            <div class="sensor-row">
+              <button id="micToggle" class="sensor-btn">
+                <span class="icon">🎤</span>
+                <span>Микрофон</span>
+                <span class="state">off</span>
+              </button>
+              <div class="band-meters">
+                <div class="band-row bass"><span class="band-label">bass</span><div class="band-bar"><div class="band-fill" id="bassBar"></div></div></div>
+                <div class="band-row mid"><span class="band-label">mid</span><div class="band-bar"><div class="band-fill" id="midBar"></div></div></div>
+                <div class="band-row treble"><span class="band-label">treb</span><div class="band-bar"><div class="band-fill" id="trebleBar"></div></div></div>
+              </div>
+            </div>
+            <div class="sensor-row">
+              <button id="tiltToggle" class="sensor-btn">
+                <span class="icon">📱</span>
+                <span>Наклон</span>
+                <span class="state">off</span>
+              </button>
+              <div class="tilt-pad"><div class="tilt-dot" id="tiltDot"></div></div>
+            </div>
+            <p class="sensor-hint" id="sensorHint">Включите датчик, чтобы управлять параметром в реальном времени.</p>
+          </div>
+
+          <button id="regenerate" class="btn btn-primary">Пересоздать</button>
+
+          <div class="seed">
+            <span style="color:#939393;">Seed</span>
+            <code id="seedDisplay">—</code>
+            <button id="copySeed" title="Скопировать">copy</button>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <button id="save" class="btn btn-ghost">＋ Сохранить</button>
+            <button id="share" class="btn btn-ghost">↗ Поделиться</button>
+          </div>
+          <button id="record" class="btn btn-ghost">⏺ Записать 3 сек</button>
+          <button id="walk" class="btn btn-ghost">🚶 Walk 30 сек</button>
+
+          <div class="daily-badge">
+            <span class="label">📅 Сегодня:</span>
+            <span class="date" id="dailyDate">—</span>
+            <button id="dailyTake" title="Загрузить работу сегодняшнего дня">взять</button>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="gallery">
+      <div class="section-head">
+        <div>
+          <h2>Коллекция</h2>
+          <p>Сохранения остаются локально на вашей машине. Нажмите на карточку — откроются «родственники» (тот же seed в других алгоритмах).</p>
+        </div>
+        <button id="clearGallery" class="btn btn-ghost" style="font-size: 12px; padding: 8px 14px;">Очистить</button>
+      </div>
+      <div id="galleryGrid" class="gallery"></div>
+    </section>
+
+    <section id="about">
+      <div class="section-head">
+        <div>
+          <h2>Как это работает</h2>
+          <p>Алгоритм под капотом, для тех, кому интересно.</p>
+        </div>
+      </div>
+      <div class="about-grid" id="aboutGrid"></div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <span>© 2026 Cifra. Generative Lab.</span>
+      <span class="mono" style="color:#6b6b70;">p5.js · Web Audio · DeviceMotion</span>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast">Сохранено</div>
+
+  <div class="relatives-modal" id="relativesModal">
+    <div class="relatives-content">
+      <div style="display: flex; justify-content: space-between; align-items: start;">
+        <div>
+          <h3>Семья: <code id="relativesSeed" style="color: #79A0FF;"></code></h3>
+          <p style="color: #939393; font-size: 13px; margin-top: 4px;">Тот же seed во всех алгоритмах. Нажмите, чтобы открыть.</p>
+        </div>
+        <button class="relatives-close" id="relativesClose">×</button>
+      </div>
+      <div class="relatives-grid" id="relativesGrid"></div>
+    </div>
+  </div>
+
+  <div class="walk-modal" id="walkModal">
+    <div class="walk-content">
+      <div style="display: flex; justify-content: space-between; align-items: start;">
+        <div>
+          <h3 style="font-size: 20px;">Walk завершён</h3>
+          <p style="color: #939393; font-size: 13px; margin-top: 4px;">30 секунд путешествия по пространству параметров. <span id="walkCount"></span></p>
+        </div>
+        <button class="relatives-close" id="walkClose">×</button>
+      </div>
+      <div class="walk-flipbook" id="walkFlipbook"></div>
+      <div class="actions">
+        <button class="btn btn-ghost" id="walkDownload">⤓ Скачать видео (.webm)</button>
+        <button class="btn btn-primary" id="walkAgain">🔁 Повторить</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/p5.min.js"></script>
+  <script src="assets/engine.js"></script>
+  <script src="assets/lab.js"></script>
+</body>
+</html>

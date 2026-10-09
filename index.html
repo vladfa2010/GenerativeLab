@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>C/ generative lab — курс и лаборатория по генеративному искусству</title>
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="index.html">C/<span class="brand-sub">generative lab</span></a>
+      <nav class="nav">
+        <a href="index.html" class="active">Главная</a>
+        <a href="course.html">Курс</a>
+        <a href="lab.html">Лаборатория</a>
+        <a href="#gallery" class="nav-anchor">Галерея</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="landing-hero">
+    <canvas id="heroCanvas"></canvas>
+    <div class="wrap">
+      <div class="hero-kicker">C/ · Generative Lab</div>
+      <h1>Лучший способ учиться<br />— пробовать самому</h1>
+      <p class="hero-sub">Мы собрали интерактивный курс по генеративному искусству и создали C/ generative lab — лабораторию, где каждый алгоритм можно потрогать руками. Читаете урок — и сразу крутите параметры.</p>
+      <div class="hero-cta">
+        <a class="btn btn-primary btn-xl" href="course.html">Пройти курс</a>
+        <a class="btn btn-ghost btn-xl" href="lab.html">Открыть Generative Lab</a>
+      </div>
+    </div>
+  </section>
+
+  <main class="wrap">
+    <div class="path-grid">
+      <a class="path-card" href="course.html">
+        <div class="num">01</div>
+        <h3>Курс</h3>
+        <p>Пятнадцать уроков: от «что такое генеративный арт» до Веры Молнар и искусства подкручивания. Внизу каждого урока — живой генеративный модуль: пролистали теорию и сразу пробуете сами.</p>
+        <span class="go">Начать с урока 01 →</span>
+      </a>
+      <a class="path-card" href="lab.html">
+        <div class="num">02</div>
+        <h3>Generative Lab</h3>
+        <p>Двадцать два алгоритма: шум Перлина, клеточные автоматы, фракталы, стаи boids. Датчики, спектр «правило—хаос», запись видео и ссылки для шеринга работ.</p>
+        <span class="go">Экспериментировать →</span>
+      </a>
+    </div>
+
+    <section class="landing-gallery" id="gallery">
+      <div class="section-head">
+        <div>
+          <h2>Галерея</h2>
+          <p>Работы, созданные в Лаборатории и прямо на уроках. Хранятся локально в вашем браузере.</p>
+        </div>
+        <div class="lg-nav">
+          <button class="lg-arrow" id="lgPrev" aria-label="Назад">←</button>
+          <button class="lg-arrow" id="lgNext" aria-label="Вперёд">→</button>
+        </div>
+      </div>
+      <div class="lg-track" id="lgTrack"></div>
+    </section>
+
+    <div class="features">
+      <div class="feature">
+        <h4>Урок + практика</h4>
+        <p>Внизу каждого урока — тот самый алгоритм из текста. Ползунки, seed, кнопка «Пересоздать». Теория сразу превращается в опыт.</p>
+      </div>
+      <div class="feature">
+        <h4>22 алгоритма</h4>
+        <p>От Game of Life до реакции-диффузии Тьюринга. Всё работает локально в браузере — без сервера и без установки.</p>
+      </div>
+      <div class="feature">
+        <h4>Датчики и запись</h4>
+        <p>Микрофон и акселерометр управляют параметрами в реальном времени. Запись .webm и 30-секундный Walk-автопилот.</p>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <span>© 2026 C/ generative lab.</span>
+      <span class="mono" style="color:#6b6b70;">p5.js · Web Audio · DeviceMotion</span>
+    </div>
+  </footer>
+
+  <script>
+    // Генеративный фон hero: потоковое поле на чистом canvas 2D
+    (function () {
+      const cv = document.getElementById('heroCanvas');
+      const ctx = cv.getContext('2d');
+      const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      let W = 0, H = 0, parts = [];
+      const COLORS = ['121,160,255', '255,209,102', '6,214,160', '239,71,111'];
+      function resize() {
+        W = cv.width = cv.clientWidth;
+        H = cv.height = cv.clientHeight;
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, W, H);
+      }
+      function spawn(p) {
+        p.x = Math.random() * W;
+        p.y = Math.random() * H;
+        p.c = COLORS[(Math.random() * COLORS.length) | 0];
+        return p;
+      }
+      function init() {
+        parts = [];
+        const n = Math.min(320, Math.max(80, Math.floor(W * H / 6000)));
+        for (let i = 0; i < n; i++) parts.push(spawn({}));
+      }
+      let t = Math.random() * 100;
+      function frame() {
+        t += 0.004;
+        ctx.fillStyle = 'rgba(0,0,0,0.05)';
+        ctx.fillRect(0, 0, W, H);
+        ctx.lineWidth = 1.2;
+        for (const p of parts) {
+          const a = Math.sin(p.x * 0.0024 + t * 1.7) + Math.cos(p.y * 0.0021 - t * 1.1);
+          const ang = a * Math.PI;
+          const nx = p.x + Math.cos(ang) * 1.6;
+          const ny = p.y + Math.sin(ang) * 1.6;
+          ctx.strokeStyle = 'rgba(' + p.c + ',0.5)';
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(nx, ny);
+          ctx.stroke();
+          p.x = nx; p.y = ny;
+          if (p.x < -10 || p.x > W + 10 || p.y < -10 || p.y > H + 10 || Math.random() < 0.002) spawn(p);
+        }
+        if (!reduced) requestAnimationFrame(frame);
+      }
+      resize(); init();
+      window.addEventListener('resize', () => { resize(); init(); if (reduced) frame(); });
+      requestAnimationFrame(frame);
+    })();
+  </script>
+
+  <script>
+    // Галерея-карусель: работы из общей коллекции, иначе — демо, сгенерированные на лету
+    (function () {
+      const track = document.getElementById('lgTrack');
+      const LABELS = { perlin_noise: 'Perlin Noise', flow_field: 'Flow Field', curl_noise: 'Curl Noise', wave_interference: 'Wave Interference', truchet: 'Truchet Tiles', phyllotaxis: 'Phyllotaxis', game_of_life: 'Game of Life', maze: 'Maze', spirograph: 'Spirograph', pythagoras: 'Pythagoras Tree', barnsley: 'Barnsley Fern', lorenz: 'Lorenz', clifford: 'Clifford', boids: 'Boids', reaction_diffusion: 'Reaction-Diffusion', mandelbrot: 'Mandelbrot', julia: 'Julia', voronoi: 'Voronoi', lsystem: 'L-systems', penrose: 'Penrose', lissajous: 'Lissajous', dla: 'DLA' };
+
+      document.getElementById('lgPrev').addEventListener('click', () => track.scrollBy({ left: -480, behavior: 'smooth' }));
+      document.getElementById('lgNext').addEventListener('click', () => track.scrollBy({ left: 480, behavior: 'smooth' }));
+
+      function loadGallerySafe() {
+        try { return JSON.parse(localStorage.getItem('cifra-gallery-v6') || '[]'); } catch { return []; }
+      }
+
+      function labLink(algoId, seed, config) {
+        const url = new URL('lab.html', location.href);
+        url.searchParams.set('algo', algoId);
+        url.searchParams.set('seed', seed);
+        if (config) {
+          for (const [k, v2] of Object.entries(config)) {
+            if (typeof v2 === 'number') url.searchParams.set(k, String(v2));
+          }
+        }
+        return url.toString();
+      }
+
+      function makeCard(algoId, seed, isDemo) {
+        const a = document.createElement('a');
+        a.className = 'lg-card';
+        a.href = labLink(algoId, seed, null);
+        a.innerHTML = (isDemo ? '<span class="lg-demo">демо</span>' : '') +
+          '<div class="lg-skeleton"></div>' +
+          '<div class="lg-meta"><span class="lg-algo">' + (LABELS[algoId] || algoId) + '</span>' +
+          '<span class="lg-seed">' + seed + '</span></div>';
+        return a;
+      }
+
+      function fillCard(card, item) {
+        card.href = labLink(item.algorithm, item.seed, item.config);
+        const sk = card.querySelector('.lg-skeleton');
+        if (sk) {
+          const img = document.createElement('img');
+          img.src = item.thumb;
+          img.alt = item.algorithm + ' ' + item.seed;
+          sk.replaceWith(img);
+        }
+      }
+
+      const works = loadGallerySafe();
+      if (works.length) {
+        for (const w of works.slice(0, 24)) {
+          const card = makeCard(w.algorithm, w.seed, false);
+          track.appendChild(card);
+          fillCard(card, w);
+        }
+        return;
+      }
+
+      // Коллекция пуста → лениво подгружаем движок и генерируем демо-работы
+      const DEMOS = [
+        { algo: 'flow_field', seed: 'DEMO-FLOW', frames: 140 },
+        { algo: 'game_of_life', seed: 'DEMO-LIFE', frames: 80 },
+        { algo: 'mandelbrot', seed: 'DEMO-MBROT', frames: 3 },
+        { algo: 'truchet', seed: 'DEMO-TILES', frames: 3 },
+        { algo: 'boids', seed: 'DEMO-FLOCK', frames: 100 },
+        { algo: 'lsystem', seed: 'DEMO-TREE', frames: 3 },
+      ];
+
+      function loadScript(src) {
+        return new Promise((res, rej) => {
+          const sc = document.createElement('script');
+          sc.src = src; sc.onload = res; sc.onerror = rej;
+          document.head.appendChild(sc);
+        });
+      }
+
+      function renderDemo(card, d) {
+        return new Promise((resolve) => {
+          const holder = document.createElement('div');
+          holder.style.cssText = 'position:fixed;left:-9999px;top:0;width:220px;height:220px;pointer-events:none;';
+          document.body.appendChild(holder);
+          const mod = mountModule(holder, d.algo, {}, d.seed);
+          const t0 = Date.now();
+          const cleanup = () => { mod.remove(); holder.remove(); };
+          const tick = () => {
+            const p = mod._st.p;
+            if (p && p.width > 20 && p.frameCount >= d.frames) {
+              const thumb = mod.snapshot();
+              fillCard(card, { algorithm: d.algo, seed: d.seed, thumb });
+              cleanup(); resolve(); return;
+            }
+            if (Date.now() - t0 > 8000) {
+              card.remove(); cleanup(); resolve(); return;
+            }
+            requestAnimationFrame(tick);
+          };
+          requestAnimationFrame(tick);
+        });
+      }
+
+      (async () => {
+        const cards = DEMOS.map(d => {
+          const c = makeCard(d.algo, d.seed, true);
+          track.appendChild(c);
+          return c;
+        });
+        try {
+          await loadScript('assets/p5.min.js');
+          await loadScript('assets/engine.js');
+        } catch {
+          track.innerHTML = '<div class="lg-empty">Откройте Лабораторию и создайте первую работу — она появится здесь.</div>';
+          return;
+        }
+        await Promise.all(DEMOS.map((d, i) => renderDemo(cards[i], d)));
+        if (!track.children.length) {
+          track.innerHTML = '<div class="lg-empty">Откройте Лабораторию и создайте первую работу — она появится здесь.</div>';
+        }
+      })();
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+# Секреты и локальное окружение — никогда не коммитить
+.env
+.env.*
+*.pem
+*.key
+secrets/
+
+# ОС и редакторы
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Зависимости и сборка (будущие этапы)
+node_modules/
+dist/
+__pycache__/
+*.pyc
+.venv/
