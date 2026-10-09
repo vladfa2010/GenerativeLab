@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>C/ game art — курс о художниках, работающих через игры</title>
+  <link rel="stylesheet" href="../assets/styles.css" />
+  <link rel="stylesheet" href="assets/games.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="index.html">C/<span class="brand-sub">game art</span></a>
+      <nav class="nav">
+        <a href="index.html">Главная</a>
+        <a href="course.html" class="active">Курс</a>
+        <a href="arcade.html">Витрина</a>
+        <a href="../index.html" class="nav-anchor">← Generative Lab</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div id="courseListView">
+      <div class="page-head">
+        <h1>Курс: game art — искусство, которым нужно играть</h1>
+        <p>Десять уроков о художниках, которые работают через механику игры: от взломанного картриджа Арканджела до сюрреалистических снов Kikiyama. Внизу каждого урока — играбельный веб-гоммаж работы: прочитали теорию — и сразу проживаете её руками.</p>
+      </div>
+      <div class="course-grid" id="courseGrid"></div>
+    </div>
+    <div id="lessonView" style="display: none;"></div>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <span>© 2026 C/ game art.</span>
+      <span class="mono" style="color:#6b6b70;">canvas · WebAudio · гоммажи после оригиналов</span>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="assets/games-data.js"></script>
+  <script src="assets/games.js"></script>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    let gameApi = null;
+    let toastTimer = null;
+
+    function showToast(msg) {
+      const t = $('toast');
+      if (!t) return;
+      t.textContent = msg;
+      t.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
+    }
+
+    function bestScore(id) {
+      try { return JSON.parse(localStorage.getItem('ga-best') || '{}')[id] ?? null; } catch { return null; }
+    }
+
+    function renderGrid() {
+      const grid = $('courseGrid');
+      grid.innerHTML = '';
+      const done = JSON.parse(localStorage.getItem('ga-done') || '[]');
+      GAME_COURSE.forEach((lesson, idx) => {
+        const card = document.createElement('div');
+        card.className = 'course-card';
+        const b = bestScore(lesson.game);
+        card.innerHTML = `
+          <div class="num">УРОК ${lesson.num}${done.includes(lesson.id) ? ' · ✓' : ''}</div>
+          <h4>${lesson.title}</h4>
+          <div class="ga-artist">${lesson.artist} <span class="ga-year">· ${lesson.work}, ${lesson.year}</span></div>
+          <p class="summary">${lesson.summary}</p>
+          <div class="tags">${lesson.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>
+        `;
+        card.addEventListener('click', () => { location.hash = '#/' + idx; });
+        grid.appendChild(card);
+      });
+    }
+
+    function destroyGame() {
+      if (gameApi) { gameApi.destroy(); gameApi = null; }
+    }
+
+    function markDone(id) {
+      try {
+        const done = JSON.parse(localStorage.getItem('ga-done') || '[]');
+        if (!done.includes(id)) { done.push(id); localStorage.setItem('ga-done', JSON.stringify(done)); }
+      } catch { }
+    }
+
+    function saveBest(gameId, score) {
+      try {
+        const all = JSON.parse(localStorage.getItem('ga-best') || '{}');
+        if (score !== null && (all[gameId] === undefined || score > all[gameId])) {
+          all[gameId] = score;
+          localStorage.setItem('ga-best', JSON.stringify(all));
+          return true;
+        }
+      } catch { }
+      return false;
+    }
+
+    function showLesson(idx) {
+      const lesson = GAME_COURSE[idx];
+      if (!lesson) { location.hash = '#/'; return; }
+      destroyGame();
+      $('courseListView').style.display = 'none';
+      const view = $('lessonView');
+      view.style.display = 'block';
+
+      const prevBtn = idx === 0
+        ? '<span class="btn btn-ghost" style="opacity:.4;pointer-events:none">← Назад</span>'
+        : `<a class="btn btn-ghost" href="#/${idx - 1}">← Урок ${GAME_COURSE[idx - 1].num}</a>`;
+      const nextBtn = idx === GAME_COURSE.length - 1
+        ? '<span class="btn btn-ghost" style="opacity:.4;pointer-events:none">Далее →</span>'
+        : `<a class="btn btn-ghost" href="#/${idx + 1}">Урок ${GAME_COURSE[idx + 1].num} →</a>`;
+
+      view.innerHTML = `
+        <a class="back-link" href="#/">← Все уроки</a>
+        <div class="lesson-content lesson-page">
+          <div class="lesson-num">УРОК ${lesson.num} из ${String(GAME_COURSE.length).padStart(2, '0')}</div>
+          <h2>${lesson.title}</h2>
+          <p class="lesson-summary">${lesson.artist} · «${lesson.work}», ${lesson.year}. ${lesson.summary}</p>
+          <div class="lesson-body">${lesson.body}</div>
+
+          <div class="lesson-module">
+            <div class="lm-head">
+              <h4>Проживите работу</h4>
+              <span class="lm-meta">веб-гоммаж после «${lesson.work}» (${lesson.year})</span>
+            </div>
+            <div class="lm-body">
+              <div class="lm-canvas" id="gaHolder" style="grid-column: 1 / -1;"></div>
+            </div>
+            <p class="ga-hint">Управление: <code>${lesson.controls}</code>. Это художественная отсылка к оригиналу, а не копия: она повторяет механику и настроение работы ${lesson.artist}.</p>
+            <div class="ga-actions">
+              <button class="btn btn-primary" id="gaRestart">↺ Начать заново</button>
+              <a class="btn btn-ghost" href="arcade.html">Витрина всех работ →</a>
+              <span class="ga-score" id="gaScore"></span>
+            </div>
+          </div>
+
+          <div class="exercise">
+            <h5>Задание</h5>
+            <p>${lesson.exercise}</p>
+          </div>
+
+          <div class="lesson-actions">
+            <div class="nav-buttons">${prevBtn}${nextBtn}</div>
+          </div>
+        </div>
+      `;
+      window.scrollTo({ top: 0 });
+
+      const scoreEl = $('gaScore');
+      let recordBeaten = false;
+      const refreshScore = (s) => {
+        const b = bestScore(lesson.game);
+        const tag = recordBeaten ? ' · новый рекорд ✦' : '';
+        scoreEl.innerHTML = 'сейчас: <b>' + s + '</b> · лучший: <b>' + (b === null ? '—' : b) + '</b>' + tag;
+      };
+      refreshScore(0);
+
+      gameApi = GameArt.mountGame($('gaHolder'), lesson.game, {
+        onScore(s) {
+          if (saveBest(lesson.game, s)) recordBeaten = true;
+          refreshScore(s);
+        },
+        onEvent(name) {
+          if (name === 'over') {
+            markDone(lesson.id);
+            showToast('Работа прожита ✦');
+            renderGrid();
+          }
+        },
+      });
+
+      $('gaRestart').addEventListener('click', () => {
+        if (gameApi) { gameApi.restart(); recordBeaten = false; showToast('Заново'); }
+      });
+    }
+
+    function showList() {
+      destroyGame();
+      $('lessonView').style.display = 'none';
+      $('courseListView').style.display = 'block';
+      renderGrid();
+    }
+
+    function route() {
+      const m = location.hash.match(/^#\/(\d+)$/);
+      if (m) showLesson(parseInt(m[1], 10));
+      else showList();
+    }
+
+    renderGrid();
+    window.addEventListener('hashchange', route);
+    route();
+  </script>
+</body>
+</html>

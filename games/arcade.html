@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>C/ game art — витрина работ</title>
+  <link rel="stylesheet" href="../assets/styles.css" />
+  <link rel="stylesheet" href="assets/games.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="index.html">C/<span class="brand-sub">game art</span></a>
+      <nav class="nav">
+        <a href="index.html">Главная</a>
+        <a href="course.html">Курс</a>
+        <a href="arcade.html" class="active">Витрина</a>
+        <a href="../index.html" class="nav-anchor">← Generative Lab</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="page-head">
+      <h1>Витрина: десять работ, в которые можно играть</h1>
+      <p>Каждая карточка — веб-гоммаж арт-работы из курса. Нажмите, чтобы запустить: ничего не нужно скачивать или устанавливать — работа живёт прямо на странице. Рекорды хранятся локально в вашем браузере.</p>
+    </div>
+    <div class="arc-grid" id="arcGrid"></div>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <span>© 2026 C/ game art.</span>
+      <span class="mono" style="color:#6b6b70;">canvas · WebAudio · гоммажи после оригиналов</span>
+    </div>
+  </footer>
+
+  <div class="arc-modal" id="arcModal">
+    <div class="arc-modal-box">
+      <div class="arc-modal-head">
+        <div>
+          <h3 id="amTitle"></h3>
+          <div class="sub" id="amSub"></div>
+        </div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <a class="btn btn-ghost" id="amLesson" style="font-size:12px; padding:8px 14px;">о работе →</a>
+          <button class="arc-modal-close" id="amClose" aria-label="Закрыть">×</button>
+        </div>
+      </div>
+      <div id="amHolder"></div>
+      <p class="ga-hint" id="amHint"></p>
+    </div>
+  </div>
+
+  <script src="assets/games-data.js"></script>
+  <script src="assets/games.js"></script>
+  <script>
+    const grid = document.getElementById('arcGrid');
+    const modal = document.getElementById('arcModal');
+    const holder = document.getElementById('amHolder');
+    let current = null;
+
+    function best(id) {
+      try { return JSON.parse(localStorage.getItem('ga-best') || '{}')[id] ?? null; } catch { return null; }
+    }
+    function saveBest(id, s) {
+      try {
+        const all = JSON.parse(localStorage.getItem('ga-best') || '{}');
+        if (s !== null && (all[id] === undefined || s > all[id])) { all[id] = s; localStorage.setItem('ga-best', JSON.stringify(all)); return true; }
+      } catch { }
+      return false;
+    }
+
+    const thumbs = {};
+    function buildCards() {
+      grid.innerHTML = '';
+      GAME_COURSE.forEach((L, idx) => {
+        const card = document.createElement('div');
+        card.className = 'arc-card';
+        const b = best(L.game);
+        card.innerHTML = `
+          <img class="arc-thumb" data-game="${L.game}" alt="${L.work}" />
+          <div class="arc-body">
+            <div class="arc-num">РАБОТА ${L.num}</div>
+            <div class="arc-title">${L.work}</div>
+            <div class="arc-artist">${L.artist} · ${L.year}</div>
+            <p class="arc-desc">${L.summary.split('.')[0]}.</p>
+            <div class="arc-foot">
+              <span>${L.controls.split('·')[0]}</span>
+              <span class="arc-best">${b === null ? 'рекорда нет' : 'лучший: ' + b}</span>
+            </div>
+          </div>`;
+        card.addEventListener('click', () => openGame(idx));
+        grid.appendChild(card);
+      });
+      // миниатюры: прогоняем каждую игру пару кадров в фоне
+      document.querySelectorAll('.arc-thumb').forEach((img, i) => {
+        const L = GAME_COURSE[i];
+        if (thumbs[L.game]) { img.src = thumbs[L.game]; return; }
+        const host = document.createElement('div');
+        host.style.cssText = 'position:fixed;left:-9999px;top:0;width:640px;';
+        document.body.appendChild(host);
+        const api = GameArt.mountGame(host, L.game, {});
+        setTimeout(() => {
+          try { thumbs[L.game] = api.canvas.toDataURL('image/png'); img.src = thumbs[L.game]; } catch (e) { }
+          api.destroy(); host.remove();
+        }, 700 + i * 120);
+      });
+    }
+
+    function openGame(idx) {
+      const L = GAME_COURSE[idx];
+      document.getElementById('amTitle').textContent = '«' + L.work + '» — ' + L.artist + ', ' + L.year;
+      document.getElementById('amSub').textContent = 'веб-гоммаж · ' + L.title;
+      document.getElementById('amLesson').href = 'course.html#/' + idx;
+      document.getElementById('amHint').innerHTML = 'Управление: <code>' + L.controls + '</code>';
+      holder.innerHTML = '';
+      if (current) current.destroy();
+      current = GameArt.mountGame(holder, L.game, {
+        onScore(s) { saveBest(L.game, s); },
+      });
+      modal.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeGame() {
+      modal.classList.remove('open');
+      document.body.style.overflow = '';
+      if (current) { current.destroy(); current = null; }
+      holder.innerHTML = '';
+      buildCards();
+    }
+
+    document.getElementById('amClose').addEventListener('click', closeGame);
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeGame(); });
+    window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && modal.classList.contains('open')) closeGame(); });
+
+    buildCards();
+  </script>
+</body>
+</html>
