@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>C/ game art — курс и витрина арт-игр</title>
+  <link rel="stylesheet" href="../assets/styles.css" />
+  <link rel="stylesheet" href="assets/games.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="index.html">C/<span class="brand-sub">game art</span></a>
+      <nav class="nav">
+        <a href="index.html" class="active">Главная</a>
+        <a href="course.html">Курс</a>
+        <a href="arcade.html">Витрина</a>
+        <a href="../index.html" class="nav-anchor">← Generative Lab</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="landing-hero">
+    <canvas id="heroCanvas"></canvas>
+    <div class="wrap">
+      <div class="ga-hero-kicker">C/ · Game Art</div>
+      <h1>Искусство, которым<br />нужно играть</h1>
+      <p class="hero-sub">Мы собрали курс о художниках, работающих через механику игры, — и сделали каждую работу играбельной прямо в браузере. Взлом картриджа, игра-памфлет, пять минут жизни: читаете урок — и сразу проживаете его руками.</p>
+      <div class="hero-cta">
+        <a class="btn btn-primary btn-xl" href="course.html">Пройти курс</a>
+        <a class="btn btn-ghost btn-xl" href="arcade.html">Открыть витрину</a>
+      </div>
+    </div>
+  </section>
+
+  <main class="wrap">
+    <div class="path-grid">
+      <a class="path-card" href="course.html">
+        <div class="num">01</div>
+        <h3>Курс</h3>
+        <p>Десять уроков: от Super Mario Clouds Кори Арканджела до снов Kikiyama. Внизу каждого урока — играбельный веб-гоммаж работы: прочитали теорию — и сразу проживаете её.</p>
+        <span class="go">Начать с урока 01 →</span>
+      </a>
+      <a class="path-card" href="arcade.html">
+        <div class="num">02</div>
+        <h3>Витрина</h3>
+        <p>Все десять работ в одной сетке: облака, которые можно сломать, очередь в MoMA, остров-оркестр, сон с эффектами. Без установки — запуск прямо на странице, рекорды в вашем браузере.</p>
+        <span class="go">Играть →</span>
+      </a>
+    </div>
+
+    <div class="ga-manifesto">
+      <p><em>Чем игры отличаются от кино и живописи?</em> Зритель не смотрит — он действует, а значит, отвечает за происходящее лично. Художники это давно поняли: Кори Арканджел взламывает картриджи, Марина Абрамович садится напротив в игре Пиппина Барра, Джейсон Рорер упаковывает жизнь в пять минут. Этот курс — про то, как устроен их язык: механика, правило, жест. И про то, как этот язык читать — руками.</p>
+    </div>
+
+    <section class="landing-gallery">
+      <div class="section-head">
+        <div>
+          <h2>Работы курса</h2>
+          <p>Хронологический конвой арт-игр: 2002 → 2017 и одна легенда 2004 года.</p>
+        </div>
+        <div class="lg-nav">
+          <button class="lg-arrow" id="lgPrev" aria-label="Назад">←</button>
+          <button class="lg-arrow" id="lgNext" aria-label="Вперёд">→</button>
+        </div>
+      </div>
+      <div class="lg-track" id="lgTrack"></div>
+    </section>
+
+    <div class="features">
+      <div class="feature">
+        <h4>Урок + проживание</h4>
+        <p>Теория заканчивается не выводом, а работающей механикой. Passage проходится как Passage: вдвоём, с седыми волосами, до стены справа.</p>
+      </div>
+      <div class="feature">
+        <h4>10 художников, 10 механик</h4>
+        <p>ROM-хакинг, глитч, реверс времени, процедурная риторика, типографика-лабиринт. Каждая работа — один точный жест.</p>
+      </div>
+      <div class="feature">
+        <h4>Музейный контекст</h4>
+        <p>У каждого урока — проверенные факты: коллекция Уитни, MoMA, биеннале, «Грэмми» саундтрека, цензура в App Store. Искусство — это ещё и институции.</p>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <span>© 2026 C/ game art.</span>
+      <span class="mono" style="color:#6b6b70;">canvas · WebAudio · гоммажи после оригиналов</span>
+    </div>
+  </footer>
+
+  <script>
+    // Фон героя: пиксельные облака, дрейф и глитч-помехи (после Arcangel & JODI)
+    (function () {
+      const cv = document.getElementById('heroCanvas');
+      const ctx = cv.getContext('2d');
+      const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      let W = 0, H = 0, clouds = [], glitches = [], t = 0;
+      function resize() {
+        W = cv.width = cv.clientWidth; H = cv.height = cv.clientHeight;
+        ctx.fillStyle = '#05060a'; ctx.fillRect(0, 0, W, H);
+        clouds = [];
+        const n = Math.max(6, Math.floor(W / 180));
+        for (let i = 0; i < n; i++) clouds.push({ x: Math.random() * W, y: 30 + Math.random() * (H - 120), s: 0.7 + Math.random() * 1.3, v: 0.2 + Math.random() * 0.5 });
+      }
+      function cloud(x, y, k) {
+        const u = 7 * k;
+        ctx.fillStyle = 'rgba(235,238,255,0.16)';
+        [[1,5],[0,7],[0,7],[1,5]].forEach((r, i) => ctx.fillRect(x + r[0] * u, y + i * u, r[1] * u, u));
+        ctx.fillRect(x + 2 * u, y - u, 3 * u, u);
+        ctx.fillStyle = 'rgba(121,160,255,0.10)';
+        ctx.fillRect(x + u, y + 3 * u, 5 * u, u);
+      }
+      function frame() {
+        t += 0.016;
+        ctx.fillStyle = 'rgba(5,6,10,0.28)'; ctx.fillRect(0, 0, W, H);
+        clouds.forEach(c => {
+          c.x -= c.v; if (c.x < -140) { c.x = W + 40; c.y = 30 + Math.random() * (H - 120); }
+          cloud(c.x, c.y, c.s);
+        });
+        // глитч-вспышки
+        if (Math.random() < 0.03) glitches.push({ y: Math.random() * H, life: 0.12 + Math.random() * 0.15 });
+        glitches = glitches.filter(g => (g.life -= 0.016) > 0);
+        glitches.forEach(g => {
+          ctx.fillStyle = Math.random() > 0.5 ? 'rgba(121,160,255,0.5)' : 'rgba(255,255,255,0.6)';
+          ctx.fillRect(Math.random() * W * 0.8, g.y, 40 + Math.random() * 200, 3);
+        });
+        // редкий ASCII-шум
+        if (Math.random() < 0.008) {
+          ctx.font = '12px monospace'; ctx.fillStyle = 'rgba(155,227,107,0.5)';
+          for (let i = 0; i < 6; i++) ctx.fillText(String.fromCharCode(33 + (Math.random() * 90) | 0), Math.random() * W, Math.random() * H);
+        }
+        if (!reduced) requestAnimationFrame(frame);
+      }
+      resize(); window.addEventListener('resize', resize);
+      requestAnimationFrame(frame);
+    })();
+
+    // Лента работ: карточки-ссылки на витрину
+    (function () {
+      const track = document.getElementById('lgTrack');
+      document.getElementById('lgPrev').addEventListener('click', () => track.scrollBy({ left: -480, behavior: 'smooth' }));
+      document.getElementById('lgNext').addEventListener('click', () => track.scrollBy({ left: 480, behavior: 'smooth' }));
+      const WORKS = [
+        ['Super Mario Clouds', 'Cory Arcangel', '2002'],
+        ['SOD', 'JODI', '1999'],
+        ['Passage', 'Jason Rohrer', '2007'],
+        ['The Graveyard', 'Tale of Tales', '2008'],
+        ['McDonald\'s Videogame', 'Molleindustria', '2006'],
+        ['The Artist Is Present', 'Pippin Barr', '2011'],
+        ['Proteus', 'Ed Key & David Kanaga', '2013'],
+        ['Everything', 'David OReilly', '2017'],
+        ['DEVICE 6', 'Simogo', '2013'],
+        ['Yume Nikki', 'Kikiyama', '2004'],
+      ];
+      WORKS.forEach((w, i) => {
+        const a = document.createElement('a');
+        a.className = 'lg-card';
+        a.href = 'arcade.html';
+        a.innerHTML = '<div class="lg-skeleton" style="display:flex;align-items:center;justify-content:center;color:#3a3a44;font:700 40px Inter,sans-serif;">' +
+          String(i + 1).padStart(2, '0') + '</div>' +
+          '<div class="lg-meta"><span class="lg-algo">' + w[0] + '</span><span class="lg-seed">' + w[1] + ' · ' + w[2] + '</span></div>';
+        track.appendChild(a);
+      });
+    })();
+  </script>
+</body>
+</html>
