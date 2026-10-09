@@ -1,0 +1,12 @@
+# Render — Static Site (бесплатный тариф)
+# Подробности: https://render.com/docs/static-site
+services:
+  - type: web
+    name: generativelab
+    runtime: static
+    repo: https://github.com/vladfa2010/GenerativeLab
+    branch: main
+    buildCommand: ""
+    staticPublishPath: ./
+    # Навигация — многостраничная (index.html / course.html / lab.html),
+    # hash-роутинг внутри страниц, rewrite-правила не нужны.
