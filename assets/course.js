@@ -46,11 +46,15 @@ function destroyModule() {
   if (moduleApi) { moduleApi.remove(); moduleApi = null; }
 }
 
-/* Панель управления модуля: датчики (урок 01) или ползунки (остальные) */
+/* Модуль урока — карточки без канвы: текст + (микрофон с линией в уроке 01) + «Открыть в Лабе» */
 function moduleControlsHtml(lesson) {
+  const openLab = lesson.moduleOpenLab === false
+    ? ''
+    : '<a class="btn btn-ghost" id="lmOpenLab" href="#">Открыть в Лабе ↗</a>';
+  const actions = openLab ? `<div class="lm-actions">${openLab}</div>` : '';
+  const note = lesson.moduleNote ? `<p class="lm-note">${lesson.moduleNote}</p>` : '';
   if (lesson.moduleMode === 'sensors') {
-    const sensors = lesson.moduleSensors || ['mic', 'tilt'];
-    const micRow = sensors.includes('mic') ? `
+    const micRow = `
       <div class="mic-switch" id="lmMicSwitch">
         <button id="lmMic" class="mic-pill" aria-pressed="false">
           <span class="icon">🎤</span>
@@ -71,159 +75,89 @@ function moduleControlsHtml(lesson) {
         <div class="mic-eq" id="lmMicEq">
           <canvas class="eq-line" id="lmEqCanvas"></canvas>
         </div>
-      </div>` : '';
-    const tiltRow = sensors.includes('tilt') ? `
-      <div class="sensor-row">
-        <button id="lmTilt" class="sensor-btn">
-          <span class="icon">📱</span>
-          <span>Наклон</span>
-          <span class="state">off</span>
-        </button>
-        <div class="tilt-pad"><div class="tilt-dot" id="lmTiltDot"></div></div>
-      </div>` : '';
-    const hints = [];
-    if (sensors.includes('mic')) hints.push('bass → сложность · mid → мутация · treble → плотность');
-    if (sensors.includes('tilt')) hints.push('наклон → сложность');
-    const regenBtn = lesson.moduleRegen === false
-      ? ''
-      : '<button class="btn btn-primary" id="lmRegen">🎲 Пересоздать</button>';
-    const saveBtn = lesson.moduleSave === false
-      ? ''
-      : '<button class="btn btn-ghost" id="lmSave">＋ Сохранить</button>';
-    const openLab = lesson.moduleOpenLab === false
-      ? ''
-      : '<a class="btn btn-ghost" id="lmOpenLab" href="#">Открыть в Лабе ↗</a>';
-    return `
-      <p class="lm-note">${lesson.moduleNote}</p>
-      ${micRow}
-      ${tiltRow}
-      <p class="sensor-hint">${hints.join(' · ')}</p>
-      <div class="lm-actions">
-        ${regenBtn}
-        ${saveBtn}
-        ${openLab}
       </div>
-    `;
+      <p class="sensor-hint">бас слева · верхи справа — линия рисует ваш звук</p>`;
+    return `${note}${micRow}${actions}`;
   }
-  if (lesson.moduleMode === 'seed') {
-    const saveBtn = lesson.moduleSave === false
-      ? ''
-      : '<button class="btn btn-ghost" id="lmSave">＋ Сохранить</button>';
-    const openLab = lesson.moduleOpenLab === false
-      ? ''
-      : '<a class="btn btn-ghost" id="lmOpenLab" href="#">Открыть в Лабе ↗</a>';
-    const extraActions = (saveBtn || openLab)
-      ? `<div class="lm-actions">${saveBtn}${openLab}</div>`
-      : '';
-    return `
-      <p class="lm-note">${lesson.moduleNote}</p>
-      <div class="lm-actions">
-        <button class="btn btn-ghost" id="lmRegen">🎲 Случайный seed</button>
-      </div>
-      <div class="seed-row">
-        <input id="lmSeedInput" class="seed-input" type="text" maxlength="32"
-               placeholder="Ваш seed: слово, имя, дата…" autocomplete="off" spellcheck="false" />
-        <button class="btn btn-primary" id="lmApplySeed">Применить</button>
-      </div>
-      <p class="sensor-hint">Один и тот же seed — одна и та же работа. Измените хоть символ — и мир станет другим.</p>
-      ${extraActions}
-    `;
-  }
-  const defRegen = lesson.moduleRegen === false
-    ? ''
-    : '<button class="btn btn-primary" id="lmRegen">🎲 Пересоздать</button>';
-  const defOpenLab = lesson.moduleOpenLab === false
-    ? ''
-    : '<a class="btn btn-ghost" id="lmOpenLab" href="#">Открыть в Лабе ↗</a>';
-  const defActions = (defRegen || defOpenLab)
-    ? `<div class="lm-actions">${defRegen}${defOpenLab}</div>`
-    : '';
-  return `
-    <div id="lmControls"></div>
-    ${defActions}
-  `;
+  return `${note}${actions}`;
 }
 
-function saveModuleToGallery() {
-  const thumb = moduleApi.snapshot();
-  if (!thumb) return;
-  const items = loadGallery();
-  items.unshift({
-    seed: moduleApi.state.seed,
-    algorithm: moduleApi.state.algorithm,
-    config: { ...moduleApi.state.params },
-    spectrum: 0,
-    ts: Date.now(),
-    thumb,
-  });
-  saveGallery(items.slice(0, 24));
-  showToast('Сохранено в коллекцию (см. Лабораторию)');
-}
-
-function wireSeedControls(lesson, syncLabLink) {
-  const input = $('lmSeedInput');
-  input.value = moduleApi.state.seed;
-
-  const apply = () => {
-    const v = input.value.trim().replace(/\s+/g, '-');
-    if (!v) {
-      showToast('Введите seed — любые буквы и цифры');
-      input.focus();
-      return;
-    }
-    input.value = v;
-    moduleApi.state.seed = v;
-    $('lmSeed').textContent = v;
-    moduleApi.reset();
-    syncLabLink();
-  };
-  $('lmApplySeed').addEventListener('click', apply);
-  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') apply(); });
-  input.addEventListener('focus', () => input.select());
-
-  const saveBtn = $('lmSave');
-  if (saveBtn) saveBtn.addEventListener('click', saveModuleToGallery);
-}
-
-function wireSensorControls(lesson, syncLabLink) {
-  const st = moduleApi._st;
-  st.bars = { dot: $('lmTiltDot') };
-  st.eqCanvas = $('lmEqCanvas');
-
+/* Автономный микрофон с линией-эквалайзером (без канвы): pill → getUserMedia → тонкая линия */
+function wireMicCard() {
   const micSwitch = $('lmMicSwitch');
   const micBtn = $('lmMic');
-  const setMicUi = (on) => {
+  const canvas = $('lmEqCanvas');
+  if (!micBtn || !canvas) return;
+  let mic = null, raf = 0;
+
+  const setUi = (on) => {
     if (micSwitch) micSwitch.classList.toggle('on', on);
-    if (micBtn) micBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    micBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
   };
-  if (micBtn) micBtn.addEventListener('click', () => {
-    enableModuleMic(st,
-      () => { setMicUi(true); showToast('Микрофон включён — подуйте!'); },
-      () => showToast('Нет доступа к микрофону'));
-  });
-  const tiltBtn = $('lmTilt');
-  const setBtn = (btn, on) => {
-    btn.classList.toggle('on', on);
-    btn.querySelector('.state').textContent = on ? 'on' : 'off';
+
+  const stop = () => {
+    if (mic) {
+      mic.stream.getTracks().forEach(t => t.stop());
+      mic.ctx.close().catch(() => {});
+      mic = null;
+    }
+    cancelAnimationFrame(raf);
+    const c2 = canvas.getContext('2d');
+    c2.clearRect(0, 0, canvas.width, canvas.height);
+    setUi(false);
   };
-  if (tiltBtn) tiltBtn.addEventListener('click', () => {
-    if (moduleApi.state.sensors.tilt) {
-      disableModuleTilt(st);
-      setBtn(tiltBtn, false);
-    } else {
-      enableModuleTilt(st,
-        () => { setBtn(tiltBtn, true); showToast('Датчик наклона включён'); },
-        () => showToast('Наклон доступен только на телефоне'));
+
+  const loop = () => {
+    if (!mic) return;
+    mic.an.getByteFrequencyData(mic.buf);
+    const dpr = window.devicePixelRatio || 1;
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    if (w > 0 && h > 0) {
+      if (canvas.width !== Math.round(w * dpr)) { canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr); }
+      const c2 = canvas.getContext('2d');
+      c2.setTransform(dpr, 0, 0, dpr, 0, 0);
+      c2.clearRect(0, 0, w, h);
+      const N = 64, bins = mic.buf.length;
+      c2.beginPath();
+      for (let bi = 0; bi < N; bi++) {
+        const lo = Math.max(1, Math.floor(Math.pow(bins, bi / N)));
+        const hi = Math.max(lo + 1, Math.floor(Math.pow(bins, (bi + 1) / N)));
+        let mx = 0;
+        for (let j = lo; j < hi; j++) { if (mic.buf[j] > mx) mx = mic.buf[j]; }
+        const v = Math.min(1, (mx / 255) * 1.3);
+        const x = (bi / (N - 1)) * w;
+        const y = h - 2 - v * (h - 4);
+        if (bi === 0) c2.moveTo(x, y); else c2.lineTo(x, y);
+      }
+      c2.strokeStyle = 'rgba(121, 160, 255, 0.85)';
+      c2.lineWidth = 1.5; c2.lineJoin = 'round'; c2.stroke();
+    }
+    raf = requestAnimationFrame(loop);
+  };
+
+  micBtn.addEventListener('click', async () => {
+    if (mic) return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+      const source = ctx.createMediaStreamSource(stream);
+      const an = ctx.createAnalyser();
+      an.fftSize = 2048;
+      an.smoothingTimeConstant = 0.6;
+      source.connect(an);
+      mic = { ctx, an, stream, buf: new Uint8Array(an.frequencyBinCount) };
+      setUi(true);
+      showToast('Микрофон включён — подуйте!');
+      loop();
+    } catch (err) {
+      showToast('Нет доступа к микрофону');
     }
   });
-  // Параметры постоянно меняются датчиками — обновляем ссылку в Лаб перед уходом
-  const openLabLink = $('lmOpenLab');
-  if (openLabLink) openLabLink.addEventListener('click', syncLabLink);
 
-  const saveBtn = $('lmSave');
-  if (saveBtn) saveBtn.addEventListener('click', saveModuleToGallery);
+  // вызывается при смене урока
+  return stop;
 }
-
 function showLesson(idx) {
   const lesson = COURSE[idx];
   if (!lesson) { location.hash = '#/'; return; }
@@ -252,19 +186,7 @@ function showLesson(idx) {
           <h4>${lesson.moduleTitle || 'Попробуйте сами'}</h4>
           <span class="lm-meta">${algo.label} · seed <span id="lmSeed">—</span></span>
         </div>
-        <div class="lm-body">
-          <div class="lm-canvas" id="lmCanvas"></div>
-          ${lesson.moduleSpectrum ? `
-          <div class="spectrum-bar lm-spectrum">
-            <span class="label left">Pure rule</span>
-            <input type="range" id="lmSpectrum" min="0" max="1" step="0.01" value="0" />
-            <span class="label right">Pure chaos</span>
-            <span class="spectrum-value" id="lmSpectrumValue">0%</span>
-          </div>` : ''}
-          <div>
-            ${moduleControlsHtml(lesson)}
-          </div>
-        </div>
+        ${moduleControlsHtml(lesson)}
       </div>
 
       <div class="exercise">
@@ -280,10 +202,25 @@ function showLesson(idx) {
   `;
   window.scrollTo({ top: 0 });
 
-  // Живой генеративный модуль: алгоритм урока, пресет урока.
-  // Урок про seed стартует со случайного зерна — его и показываем в поле ввода.
-  const startSeed = lesson.moduleMode === 'seed' ? randomSeed() : 'LESSON-' + lesson.num;
-  moduleApi = mountModule($('lmCanvas'), lesson.algo, lesson.preset, startSeed);
+  // Карточный модуль: статическое состояние (seed + пресет), канвы нет.
+  // Вся интерактивность — по кнопке «Открыть в Лабе».
+  const startSeed = 'LESSON-' + lesson.num;
+  const params = cloneDefaults(algo);
+  for (const [k, v] of Object.entries(lesson.preset || {})) {
+    if (params[k] !== undefined) params[k] = v;
+  }
+  moduleApi = {
+    state: {
+      algorithm: lesson.algo,
+      seed: startSeed,
+      params,
+      sensors: { mic: false, tilt: false },
+      spectrum: 0,
+    },
+    reset() {},
+    snapshot() { return null; },
+    remove() {},
+  };
   window.__lessonModule = moduleApi; // отладочный доступ, как window.__generator в Лабе
   const seedEl = $('lmSeed');
   seedEl.textContent = moduleApi.state.seed;
@@ -292,34 +229,10 @@ function showLesson(idx) {
   syncLabLink();
 
   if (lesson.moduleMode === 'sensors') {
-    wireSensorControls(lesson, syncLabLink);
-  } else if (lesson.moduleMode === 'seed') {
-    wireSeedControls(lesson, syncLabLink);
-  } else {
-    buildModuleControls($('lmControls'), moduleApi.state, () => {
-      moduleApi.reset();
-      syncLabLink();
-    }, lesson.moduleHideParams);
+    const stopMic = wireMicCard();
+    const baseRemove = moduleApi.remove;
+    moduleApi.remove = () => { stopMic(); baseRemove(); };
   }
-
-  const spSlider = $('lmSpectrum');
-  if (spSlider) {
-    spSlider.addEventListener('input', (e) => {
-      moduleApi.state.spectrum = parseFloat(e.target.value);
-      const v = $('lmSpectrumValue');
-      if (v) v.textContent = Math.round(moduleApi.state.spectrum * 100) + '%';
-    });
-  }
-
-  const regenBtn = $('lmRegen');
-  if (regenBtn) regenBtn.addEventListener('click', () => {
-    moduleApi.state.seed = randomSeed();
-    seedEl.textContent = moduleApi.state.seed;
-    const si = $('lmSeedInput');
-    if (si) si.value = moduleApi.state.seed;
-    moduleApi.reset();
-    syncLabLink();
-  });
 }
 
 function showList() {
