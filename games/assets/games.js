@@ -132,13 +132,16 @@ const GameArt = (() => {
       setMuted(m) { muted = m; },
       key(c) { return !!held[c]; },
       wasPressed(c) { return pressedSet.has(c); },
+      press(c) { if (!held[c]) pressedSet.add(c); held[c] = true; },
+      release(c) { held[c] = false; },
       end(text) { if (!api.over) { api.over = true; api.overText = text || ''; } },
       setScore(s) { api.score = s; if (opts.onScore) opts.onScore(s); },
       event(name, data) { if (opts.onEvent) opts.onEvent(name, data); },
     };
 
     const state = game.init(api);
-    let raf = 0, last = performance.now(), destroyed = false, hidden = false;
+    api._s = state; // отладочный доступ к состоянию игры
+    let raf = 0, last = performance.now(), destroyed = false, hidden = false, prevOver = false;
     const visHandler = () => { hidden = document.hidden; last = performance.now(); };
     document.addEventListener('visibilitychange', visHandler);
 
@@ -152,7 +155,9 @@ const GameArt = (() => {
       try {
         if (!api.over) game.update(api, state, dt);
         game.draw(api, state);
+        if (api.over && !prevOver) { prevOver = true; if (opts.onEvent) opts.onEvent('over'); }
         if (api.over) drawOverlay(api, state);
+        if (!api.over) prevOver = false;
       } catch (err) {
         console.error('[game-art]', gameId, err);
       }
@@ -649,12 +654,13 @@ const GameArt = (() => {
       } else if (s.scene === 'queue') {
         if (!open) { api.end('МУЗЕЙ ЗАКРЫТ\nMoMA работает с 10:00 до 18:00\n(в игре Барра — в реальном времени)'); return; }
         if (s.stepFlag) {
+          s.flagAge = (s.flagAge || 0) + dt;
           if (act) { s.stepFlag = false; s.q += 1; api.tone(500, 0.08, 'square', 0.04); s.stepT = 3 + api.rand() * 4; }
+          else if (s.flagAge > 3) { s.stepFlag = false; s.q = Math.max(0, s.q - 1); s.stepT = 3 + api.rand() * 4; }
         } else {
           s.stepT -= dt;
-          if (s.stepT <= 0) { s.stepFlag = true; s.stepT = 0; }
+          if (s.stepT <= 0) { s.stepFlag = true; s.flagAge = 0; }
         }
-        if (s.q > 0 && !s.stepFlag) { s.q -= dt * 0.5; }
         if (s.q >= 12) { s.scene = 'table'; api.chord([262, 330, 392], 2, 'sine', 0.05); }
       } else if (s.scene === 'table') {
         // гляделки: держим Space; отпускаем, когда она моргает
@@ -1196,7 +1202,6 @@ const GameArt = (() => {
             if (Math.hypot(s.x - d.x, s.y - d.y) < 55) { s.scene = d.id; s.x = 480; s.y = 470; api.tone(147, 0.6, 'sine', 0.05); }
           }
         }
-        if (Object.values(s.worlds).every(w => w.got) && !s.won) { s.won = true; }
       } else {
         // миры снов
         s.x = clamp(s.x, 60, 900); s.y = clamp(s.y, 80, 500);
